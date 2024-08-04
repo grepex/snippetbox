@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"path/filepath"
 	"time"
@@ -9,11 +10,12 @@ import (
 )
 
 type templateData struct {
-	CurrentYear int
-	Snippet     models.Snippet
-	Snippets    []models.Snippet
-	Form        any
-	Flash       string
+	CurrentYear     int
+	Snippet         models.Snippet
+	Snippets        []models.Snippet
+	Form            any
+	Flash           string
+	IsAuthenticated bool
 }
 
 func humanDate(t time.Time) string {
@@ -34,6 +36,7 @@ func newTemplateCache() (map[string]*template.Template, error) {
 
 	for _, page := range pages {
 		name := filepath.Base(page)
+		fmt.Printf("Parsing template: %s\n", name)
 
 		// files := []string{
 		// 	"./ui/html/base.tmpl",
@@ -57,6 +60,7 @@ func newTemplateCache() (map[string]*template.Template, error) {
 		}
 
 		cache[name] = ts
+		fmt.Printf("Successfully parsed template: %s\n", name)
 	}
 
 	return cache, nil
