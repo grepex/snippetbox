@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-playground/form/v4"
+	"github.com/justinas/nosurf"
 )
 
 func (app *application) serverError(w http.ResponseWriter, r *http.Request, err error) {
@@ -26,14 +27,6 @@ func (app *application) clientError(w http.ResponseWriter, status int) {
 }
 
 func (app *application) render(w http.ResponseWriter, r *http.Request, status int, page string, data templateData) {
-	// TODO: remove this template cache before deployment
-	var err error
-	app.templateCache, err = newTemplateCache()
-	if err != nil {
-		app.serverError(w, r, err)
-		return
-	}
-
 	// retrieve template set from cache based on page name
 	ts, ok := app.templateCache[page]
 	if !ok {
@@ -50,17 +43,11 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, status in
 	// helper and then return
 	fmt.Printf("Template data for %s: %+v\n", page, data)
 	ts.ExecuteTemplate(os.Stdout, "base", data)
-	// TODO: be sure to add the : after removing the above code
-	err = ts.ExecuteTemplate(buf, "base", data)
+	err := ts.ExecuteTemplate(buf, "base", data)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
 	}
-
-	// TODO: remove these headers when done testing
-	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0")
-	w.Header().Set("Pragma", "no-cache")
-	w.Header().Set("Expires", "0")
 
 	// write out status code
 	w.WriteHeader(status)
@@ -75,6 +62,7 @@ func (app *application) newTemplateData(r *http.Request) templateData {
 		CurrentYear:     time.Now().Year(),
 		Flash:           app.sessionManager.PopString(r.Context(), "flash"),
 		IsAuthenticated: app.isAuthenticated(r),
+		CSRFToken:       nosurf.Token(r),
 	}
 }
 
