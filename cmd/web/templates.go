@@ -1,12 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"html/template"
+	"io/fs"
 	"path/filepath"
 	"time"
 
 	"github.com/grepexdev/snippetbox/internal/models"
+	"github.com/grepexdev/snippetbox/ui"
 )
 
 type templateData struct {
@@ -30,38 +31,26 @@ var functions = template.FuncMap{
 func newTemplateCache() (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
 
-	pages, err := filepath.Glob("./ui/html/pages/*.tmpl")
+	pages, err := fs.Glob(ui.Files, "html/pages/*.tmpl")
 	if err != nil {
 		return nil, err
 	}
 
 	for _, page := range pages {
 		name := filepath.Base(page)
-		fmt.Printf("Parsing template: %s\n", name)
 
-		// files := []string{
-		// 	"./ui/html/base.tmpl",
-		// 	"./ui/html/partials/nav.tmpl",
-		// 	page,
-		// }
-
-		ts, err := template.New(name).Funcs(functions).ParseFiles("./ui/html/base.tmpl")
-		if err != nil {
-			return nil, err
+		patterns := []string{
+			"html/base.tmpl",
+			"html/partials/*.tmpl",
+			page,
 		}
 
-		ts, err = ts.ParseGlob("./ui/html/partials/*.tmpl")
-		if err != nil {
-			return nil, err
-		}
-
-		ts, err = ts.ParseFiles(page)
+		ts, err := template.New(name).Funcs(functions).ParseFS(ui.Files, patterns...)
 		if err != nil {
 			return nil, err
 		}
 
 		cache[name] = ts
-		fmt.Printf("Successfully parsed template: %s\n", name)
 	}
 
 	return cache, nil
